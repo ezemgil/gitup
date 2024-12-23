@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Usage: gitup [commit message]
+# Automates git status, add, commit, and push, with rollback if push fails.
+
+# Exit immediately if a command exits with a non-zero status, except for git push.
+set -e
+
+# Define the commit message, use the provided message or a default timestamped message.
+commit_message=${1:-"$(date) - No message provided"}
+
+# Display the current status of the repository (short format).
+echo
+echo ">> Checking repository status"
+echo
+git status -s
+
+# Add all files to the staging area. Assumes the script is run from the repository root.
+echo
+echo ">> Staging all changes"
+echo
+git add .
+
+# Commit the changes with the provided or default message.
+echo
+echo ">> Creating a commit with message: '$commit_message'"
+echo
+git commit -m "$commit_message"
+
+# Try pushing changes to the remote repository.
+echo
+echo ">> Pushing changes to the remote repository"
+echo
+if git push; then
+    echo ">> Changes pushed successfully"
+else
+    echo ">> Push failed. Rolling back..."
+    
+    # Undo the last commit (without losing staged changes)
+    git reset --soft HEAD~1
+
+    # Optionally, unstage all files to return to the original state
+    git reset
+
+    echo ">> Rollback completed. Your changes are unstaged and safe."
+    exit 1
+fi
